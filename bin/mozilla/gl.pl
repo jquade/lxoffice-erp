@@ -92,9 +92,10 @@ sub add {
 
   $form->{callback} = "gl.pl?action=add" unless $form->{callback};
 
-  # we use this only to set a default date
-  # yep. aber er holt hier auch schon ALL_CHARTS. Aufwand / Nutzen? jb
+  # we use this only to set a default date (and previous id?) jq
   GL->transaction(\%myconfig, \%$form);
+  # store for comparison
+  warn "hmm, " . $form->{gldate} . " whohoo" . $form->{previous_transdate};
 
   map {
     $tax .=
@@ -476,7 +477,7 @@ sub generate_report {
     credit_tax     credit_tax_accno projectnumbers balance
   );
 
-  my @hidden_variables = qw(accno source reference department description notes project_id datefrom dateto category l_subtotal);
+  my @hidden_variables = qw(accno source reference department description notes project_id datefrom dateto category l_subtotal previous_transdate);
   push @hidden_variables, map { "l_${_}" } @columns;
 
   my (@options, @date_options);
@@ -1129,6 +1130,7 @@ sub form_header {
 
   $form->{previous_id}     ||= "--";
   $form->{previous_gldate} ||= "--";
+  $form->{previous_transdate} ||= "-o-";
 
   $jsscript .= $form->parse_html_template('gl/form_header_chart_balances_js');
 
@@ -1146,7 +1148,7 @@ sub form_header {
 <form method=post name="gl" action=gl.pl>
 |;
 
-  $form->hide_form(qw(id closedto locked storno storno_id previous_id previous_gldate));
+  $form->hide_form(qw(id closedto locked storno storno_id previous_id previous_gldate previous_transdate));
 
   print qq|
 <input type=hidden name=title value="$title">
@@ -1167,7 +1169,7 @@ sub form_header {
         <tr>
           <td colspan="6" align="left">|
     . $locale->text("Previous transnumber text")
-    . " $form->{previous_id} "
+    . " $form->{previous_id} [vom $form->{previous_transdate}] "
     . $locale->text("Previous transdate text")
     . " $form->{previous_gldate}"
     . qq|</td>
@@ -1460,12 +1462,12 @@ sub post_transaction {
 
 
   my $transdate = $form->datetonum($form->{transdate}, \%myconfig);
-  if ($form->{previous_gldate}) {
-      my $previousdate = $form->datetonum($form->{previous_gldate}, \%myconfig);
+  if ($form->{previous_transdate}) {
+      my $previousdate = $form->datetonum($form->{previous_transdate}, \%myconfig);
 
       if ($form->{gldatefixedmonth}) {
 	  if (not substr($transdate, 0, 6) eq substr($previousdate, 0, 6)) {
-	      $form->error("Datum $transdate nicht im gleichen Monat wie $previousdate");
+	      $form->error("Datum $transdate nicht im gleichen Monat wie $previousdate (und das war das Datum der vorhergehenden Buchung)");
 	  }	  
       }
   }

@@ -591,10 +591,12 @@ sub transaction {
   $query = qq|SELECT closedto, revtrans FROM defaults|;
   ($form->{closedto}, $form->{revtrans}) = selectrow_query($form, $dbh, $query);
 
-  $query = qq|SELECT id, gldate
+  $query = qq|SELECT id, gldate, transdate
               FROM gl
               WHERE id = (SELECT max(id) FROM gl)|;
-  ($form->{previous_id}, $form->{previous_gldate}) = selectrow_query($form, $dbh, $query);
+  ($form->{previous_id}, 
+   $form->{previous_gldate}, 
+   $form->{previous_transdate}) = selectrow_query($form, $dbh, $query);
 
   if ($form->{id}) {
     $query =
