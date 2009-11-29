@@ -1007,6 +1007,7 @@ sub form_header {
   my %myconfig = %main::myconfig;
   my $locale   = $main::locale;
 
+
   my @old_project_ids = ();
   map({ push(@old_project_ids, $form->{"project_id_$_"})
           if ($form->{"project_id_$_"}); } (1..$form->{"rowcount"}));
@@ -1097,6 +1098,10 @@ sub form_header {
     $form->{fokus} = qq|gl.accno_$form->{rowcount}|;
   }
 
+  my $gldatefixedmonth = ($form->{gldatefixedmonth}) ? "checked" : "";
+  if ($init) { $gldatefixedmonth = "checked"; }
+
+
   # use JavaScript Calendar or not
   $form->{jsscript} = 1;
   my $jsscript = "";
@@ -1107,7 +1112,8 @@ sub form_header {
     $button1 = qq|
        <td><input name=transdate id=transdate size=11 title="$myconfig{dateformat}" value="$form->{transdate}" $readonly onBlur=\"check_right_date_format(this)\">
        <input type=button name=transdate id="trigger1" value=|
-      . $locale->text('button') . qq|></td>
+      . $locale->text('button') . qq|>                 Monat/Jahr festhalten: <input type="checkbox" name="gldatefixedmonth" $gldatefixedmonth /> 
+ </td>
        |;
 
     #write Trigger
@@ -1117,7 +1123,8 @@ sub form_header {
 
     # without JavaScript Calendar
     $button1 =
-      qq|<td><input name=transdate id=transdate size=11 title="$myconfig{dateformat}" value="$form->{transdate}" $readonly onBlur=\"check_right_date_format(this)\"></td>|;
+      qq|<td><input name=transdate id=transdate size=11 title="$myconfig{dateformat}" value="$form->{transdate}" $readonly onBlur=\"check_right_date_format(this)\">                Monat/Jahr festhalten: <input type="checkbox" name="gldatefixedmonth"   $gldatefixedmonth /> 
+</td>|;
   }
 
   $form->{previous_id}     ||= "--";
@@ -1127,10 +1134,14 @@ sub form_header {
 
   $form->header;
 
+
+
+
   print qq|
 <body onLoad="focus()">
 
 <script type="text/javascript" src="js/follow_up.js"></script>
+
 
 <form method=post name="gl" action=gl.pl>
 |;
@@ -1182,7 +1193,8 @@ sub form_header {
 	  <table>
 	      <tr>
 		<th align=right width=50%>| . $locale->text('Buchungsdatum') . qq|</th>
-		<td align=left><input name=gldate size=11 title="$myconfig{dateformat}" value=$form->{gldate} $readonly onBlur=\"check_right_date_format(this)\"></td>
+		<td align=left><input name=gldate size=11 title="$myconfig{dateformat}" value=$form->{gldate} $readonly onBlur=\"check_right_date_format(this)\">
+                </td>
 	      </tr>
 	    </table>
 	  </td>
@@ -1324,6 +1336,7 @@ $follow_ups_block
 <br>
 |;
 
+
   my $transdate = $form->datetonum($form->{transdate}, \%myconfig);
   my $closedto  = $form->datetonum($form->{closedto},  \%myconfig);
 
@@ -1445,7 +1458,20 @@ sub post_transaction {
   $form->isblank("transdate",   $locale->text('Transaction Date missing!'));
   $form->isblank("description", $locale->text('Description missing!'));
 
+
   my $transdate = $form->datetonum($form->{transdate}, \%myconfig);
+  if ($form->{previous_gldate}) {
+      my $previousdate = $form->datetonum($form->{previous_gldate}, \%myconfig);
+
+      if ($form->{gldatefixedmonth}) {
+	  if (not substr($transdate, 0, 6) eq substr($previousdate, 0, 6)) {
+	      $form->error("Datum $transdate nicht im gleichen Monat wie $previousdate");
+	  }	  
+      }
+  }
+
+
+
   my $closedto  = $form->datetonum($form->{closedto},  \%myconfig);
 
   my @a           = ();
