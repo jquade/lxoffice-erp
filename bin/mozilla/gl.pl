@@ -95,7 +95,6 @@ sub add {
   # we use this only to set a default date (and previous id?) jq
   GL->transaction(\%myconfig, \%$form);
   # store for comparison
-  warn "hmm, " . $form->{gldate} . " whohoo" . $form->{previous_transdate};
 
   map {
     $tax .=
